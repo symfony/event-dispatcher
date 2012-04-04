@@ -29,6 +29,11 @@ class EventTest extends \PHPUnit_Framework_TestCase
      */
     protected $dispatcher;
 
+    /**
+     * @var int
+     */
+    protected $eventDispatchedLineNumber;
+
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -82,4 +87,50 @@ class EventTest extends \PHPUnit_Framework_TestCase
         $this->event->setName('foo');
         $this->assertEquals('foo', $this->event->getName());
     }
+
+    public function testGetOriginator()
+    {
+        $this->dispatcher->addListener('foo', array($this, 'checkReceivedEvent'));
+        $this->eventDispatchedLineNumber = __LINE__; $this->dispatcher->dispatch('foo', $this->event);
+    }
+
+    public function checkReceivedEvent($event)
+    {
+        $originatorData = $event->getOriginatorData();
+
+        $this->assertSame($this, $originatorData['object']);
+        $this->assertEquals(__FILE__, $originatorData['file']);
+        $this->assertEquals($this->eventDispatchedLineNumber, $originatorData['line']);
+    }
 }
+
+
+/**
+ * The following code tests when an event is dispatched from global scope
+ * rather than from an object. This is a rare, but somewhat annoying case,
+ * because of the vagaries of PHP's debug_backtrace function.
+ */
+
+global $eventDispatcher;
+global $eventDispatchedLineNumber;
+
+$eventDispatcher = new EventDispatcher;
+
+function dispatchEvent()
+{
+    global $eventDispatcher;
+    global $eventDispatchedLineNumber;
+
+    $eventDispatchedLineNumber = __LINE__; $eventDispatcher->dispatch('something');
+}
+
+$eventDispatcher->addListener('something', function($event) {
+    global $eventDispatchedLineNumber;
+
+    $originatorData = $event->getOriginatorData();
+    \PHPUnit_Framework_TestCase::assertEquals(1, 1);
+    \PHPUnit_Framework_TestCase::assertEquals(__FILE__, $originatorData['file']);
+    \PHPUnit_Framework_TestCase::assertEquals($eventDispatchedLineNumber, $originatorData['line']);
+});
+
+dispatchEvent();

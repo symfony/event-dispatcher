@@ -30,6 +30,12 @@ namespace Symfony\Component\EventDispatcher;
 class Event
 {
     /**
+     * @var array The object that originated the event
+     * Keys are 'object', 'file', and 'line'
+     */
+    private $originatorData;
+
+    /**
      * @var Boolean Whether no further event listeners should be triggered
      */
     private $propagationStopped = false;
@@ -43,6 +49,24 @@ class Event
      * @var string This event's name
      */
     private $name;
+
+    /**
+     * @param array $originatorData The object that originated the event
+     * Keys are 'object', 'file', and 'line'
+     */
+    public function setOriginatorData($originatorData)
+    {
+        $this->originatorData = $originatorData;
+    }
+
+    /**
+     * @return array The object that originated the event
+     * Keys are 'object', 'file', and 'line'
+     */
+    public function getOriginatorData()
+    {
+        return $this->originatorData;
+    }
 
     /**
      * Returns whether further event listeners should be triggered.

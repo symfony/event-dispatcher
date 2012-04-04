@@ -45,6 +45,7 @@ class EventDispatcher implements EventDispatcherInterface
 
         $event->setDispatcher($this);
         $event->setName($eventName);
+        $event->setOriginatorData($this->getOriginatorData());
 
         if (!isset($this->listeners[$eventName])) {
             return $event;
@@ -54,6 +55,28 @@ class EventDispatcher implements EventDispatcherInterface
 
         return $event;
     }
+
+	protected function getOriginatorData()
+	{
+        $backtrace = debug_backtrace();
+
+        if (isset($backtrace[2]['object']))
+        {
+            return array(
+                'object' => $backtrace[2]['object'],
+                'file' => $backtrace[1]['file'],
+                'line' => $backtrace[1]['line']
+            );
+        }
+        else
+        {
+            return array(
+                'object' => $backtrace[1]['object'],
+                'file' => $backtrace[1]['file'],
+                'line' => $backtrace[1]['line']
+            );
+        }
+	}
 
     /**
      * @see EventDispatcherInterface::getListeners
