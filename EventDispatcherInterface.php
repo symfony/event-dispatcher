@@ -51,6 +51,13 @@ interface EventDispatcherInterface extends ContractsEventDispatcherInterface
      */
     public function removeListener(string $eventName, $listener);
 
+    /**
+     * Removes an event subscriber
+     *
+     * @param EventSubscriberInterface $subscriber
+     *
+     * @return void
+     */
     public function removeSubscriber(EventSubscriberInterface $subscriber);
 
     /**
