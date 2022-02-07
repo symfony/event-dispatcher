@@ -55,9 +55,7 @@ class EventDispatcher implements EventDispatcherInterface
             $listeners = $this->getListeners($eventName);
         }
 
-        if ($listeners) {
-            $this->callListeners($listeners, $eventName, $event);
-        }
+        $this->callListeners($listeners, $eventName, $event);
 
         return $event;
     }
