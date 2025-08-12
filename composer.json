@@ -30,6 +30,7 @@
         "symfony/stopwatch": "^7.4|^8.0"
     },
     "conflict": {
+        "symfony/security-http": "<7.4",
         "symfony/service-contracts": "<2.5"
     },
     "provide": {
