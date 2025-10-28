@@ -12,14 +12,13 @@
 namespace Symfony\Component\EventDispatcher\Tests\DependencyInjection;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\DependencyInjection\FrameworkExtension;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\AttributeAutoconfigurationPass;
 use Symfony\Component\DependencyInjection\Compiler\ResolveInstanceofConditionalsPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\DependencyInjection\AddEventAliasesPass;
 use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -275,10 +274,7 @@ class RegisterListenersPassTest extends TestCase
 
     public function testTaggedInvokableEventListener()
     {
-        $container = new ContainerBuilder();
-        $container->registerAttributeForAutoconfiguration(AsEventListener::class, static function (ChildDefinition $definition, AsEventListener $attribute): void {
-            $definition->addTag('kernel.event_listener', get_object_vars($attribute));
-        });
+        $container = $this->createContainerBuilder();
         $container->register('foo', TaggedInvokableListener::class)->setAutoconfigured(true);
         $container->register('event_dispatcher', \stdClass::class);
 
@@ -297,21 +293,12 @@ class RegisterListenersPassTest extends TestCase
                 ],
             ],
         ];
-        $this->assertEquals($expectedCalls, $definition->getMethodCalls());
+        $this->assertEquals($expectedCalls, \array_slice($definition->getMethodCalls(), 0, \count($expectedCalls)));
     }
 
     public function testTaggedMultiEventListener()
     {
-        $container = new ContainerBuilder();
-        $container->registerAttributeForAutoconfiguration(AsEventListener::class,
-            static function (ChildDefinition $definition, AsEventListener $attribute, \ReflectionClass|\ReflectionMethod $reflector): void {
-                $tagAttributes = get_object_vars($attribute);
-                if ($reflector instanceof \ReflectionMethod) {
-                    $tagAttributes['method'] = $reflector->getName();
-                }
-                $definition->addTag('kernel.event_listener', $tagAttributes);
-            }
-        );
+        $container = $this->createContainerBuilder();
 
         $container->register('foo', TaggedMultiListener::class)->setAutoconfigured(true);
         $container->register('event_dispatcher', \stdClass::class);
@@ -355,42 +342,12 @@ class RegisterListenersPassTest extends TestCase
                 ],
             ],
         ];
-        $this->assertEquals($expectedCalls, $definition->getMethodCalls());
+        $this->assertEquals($expectedCalls, \array_slice($definition->getMethodCalls(), 0, \count($expectedCalls)));
     }
 
     public function testTaggedMethodUnionTypeEventListener()
     {
-        $container = new ContainerBuilder();
-        $container->registerAttributeForAutoconfiguration(AsEventListener::class,
-            static function (ChildDefinition $definition, AsEventListener $attribute, \ReflectionClass|\ReflectionMethod $reflector) {
-                $tagAttributes = get_object_vars($attribute);
-
-                if (!$reflector instanceof \ReflectionMethod) {
-                    $definition->addTag('kernel.event_listener', $tagAttributes);
-
-                    return;
-                }
-
-                if (isset($tagAttributes['method'])) {
-                    throw new \LogicException(\sprintf('AsEventListener attribute cannot declare a method on "%s::%s()".', $reflector->class, $reflector->name));
-                }
-
-                $tagAttributes['method'] = $reflector->getName();
-
-                if (!$eventArg = $reflector->getParameters()[0] ?? null) {
-                    throw new \LogicException(\sprintf('AsEventListener attribute requires the first argument of "%s::%s()" to be an event object.', $reflector->class, $reflector->name));
-                }
-
-                $types = ($type = $eventArg->getType() instanceof \ReflectionUnionType ? $eventArg->getType()->getTypes() : [$eventArg->getType()]) ?: [];
-
-                foreach ($types as $type) {
-                    if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                        $tagAttributes['event'] = $type->getName();
-
-                        $definition->addTag('kernel.event_listener', $tagAttributes);
-                    }
-                }
-            });
+        $container = $this->createContainerBuilder();
 
         $container->register('foo', TaggedUnionTypeListener::class)->setAutoconfigured(true);
         $container->register('event_dispatcher', \stdClass::class);
@@ -419,7 +376,7 @@ class RegisterListenersPassTest extends TestCase
             ],
         ];
 
-        $this->assertEquals($expectedCalls, $definition->getMethodCalls());
+        $this->assertEquals($expectedCalls, \array_slice($definition->getMethodCalls(), 0, \count($expectedCalls)));
     }
 
     public function testAliasedEventListener()
@@ -568,6 +525,17 @@ class RegisterListenersPassTest extends TestCase
             ],
         ];
         $this->assertEquals($expectedCalls, $definition->getMethodCalls());
+    }
+
+    private function createContainerBuilder(): ContainerBuilder
+    {
+        $container = new ContainerBuilder();
+        $container->setParameter('kernel.debug', true);
+        $container->setParameter('kernel.project_dir', __DIR__);
+        $container->setParameter('kernel.container_class', 'testContainer');
+        (new FrameworkExtension())->load([], $container);
+
+        return $container;
     }
 }
 
