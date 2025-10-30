@@ -25,6 +25,7 @@
         "symfony/dependency-injection": "^7.4|^8.0",
         "symfony/error-handler": "^7.4|^8.0",
         "symfony/expression-language": "^7.4|^8.0",
+        "symfony/framework-bundle": "^7.4|^8.0",
         "symfony/http-foundation": "^7.4|^8.0",
         "symfony/service-contracts": "^2.5|^3",
         "symfony/stopwatch": "^7.4|^8.0"
