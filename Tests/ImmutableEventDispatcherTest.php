@@ -68,7 +68,7 @@ class ImmutableEventDispatcherTest extends TestCase
     public function testAddListenerDisallowed()
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->dispatcher->addListener('event', fn () => 'foo');
+        $this->dispatcher->addListener('event', static fn () => 'foo');
     }
 
     public function testAddSubscriberDisallowed()
@@ -82,7 +82,7 @@ class ImmutableEventDispatcherTest extends TestCase
     public function testRemoveListenerDisallowed()
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->dispatcher->removeListener('event', fn () => 'foo');
+        $this->dispatcher->removeListener('event', static fn () => 'foo');
     }
 
     public function testRemoveSubscriberDisallowed()
