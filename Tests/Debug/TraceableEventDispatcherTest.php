@@ -443,6 +443,18 @@ class TraceableEventDispatcherTest extends TestCase
         $this->assertCount(2, $tdispatcher->getCalledListeners());
     }
 
+    public function testResetDuringDispatch()
+    {
+        $tdispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+        $tdispatcher->addListener('foo', function () use ($tdispatcher) {
+            $tdispatcher->reset();
+        });
+
+        $tdispatcher->dispatch(new Event(), 'foo');
+
+        $this->assertSame([], $tdispatcher->getCalledListeners());
+    }
+
     public function testCallStackIsNotLeakingWhenListenerIsRemovedBetweenDispatches()
     {
         $tdispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
