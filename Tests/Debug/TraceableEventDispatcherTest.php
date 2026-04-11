@@ -446,7 +446,7 @@ class TraceableEventDispatcherTest extends TestCase
     public function testResetDuringDispatch()
     {
         $tdispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $tdispatcher->addListener('foo', function () use ($tdispatcher) {
+        $tdispatcher->addListener('foo', static function () use ($tdispatcher) {
             $tdispatcher->reset();
         });
 
