@@ -35,7 +35,7 @@ class RegisterListenersPass implements CompilerPassInterface
      */
     public function setHotPathEvents(array $hotPathEvents): static
     {
-        trigger_deprecation('symfony/event-dispatcher', '8.1', 'The "%s()" method is deprecated, use "%s" instead.', __METHOD__, AddEventAliasesPass::class);
+        trigger_deprecation('symfony/event-dispatcher', '8.1', 'The "%s()" method is deprecated, register an "%s" compiler pass with the hot-path events instead.', __METHOD__, AddEventAliasesPass::class);
 
         $this->hotPathEvents = array_flip($hotPathEvents);
 
@@ -49,7 +49,7 @@ class RegisterListenersPass implements CompilerPassInterface
      */
     public function setNoPreloadEvents(array $noPreloadEvents): static
     {
-        trigger_deprecation('symfony/event-dispatcher', '8.1', 'The "%s()" method is deprecated, use "%s" instead.', __METHOD__, AddEventAliasesPass::class);
+        trigger_deprecation('symfony/event-dispatcher', '8.1', 'The "%s()" method is deprecated, register an "%s" compiler pass with the no-preload events instead.', __METHOD__, AddEventAliasesPass::class);
 
         $this->noPreloadEvents = array_flip($noPreloadEvents);
 
@@ -68,12 +68,15 @@ class RegisterListenersPass implements CompilerPassInterface
             $aliases = $container->getParameter('event_dispatcher.event_aliases');
         }
 
+        $hotPathEvents = $this->hotPathEvents;
+        $noPreloadEvents = $this->noPreloadEvents;
+
         if ($container->hasParameter('event_dispatcher.hot_path_events')) {
-            $this->hotPathEvents += array_flip($container->getParameter('event_dispatcher.hot_path_events'));
+            $hotPathEvents += array_flip($container->getParameter('event_dispatcher.hot_path_events'));
         }
 
         if ($container->hasParameter('event_dispatcher.no_preload_events')) {
-            $this->noPreloadEvents += array_flip($container->getParameter('event_dispatcher.no_preload_events'));
+            $noPreloadEvents += array_flip($container->getParameter('event_dispatcher.no_preload_events'));
         }
 
         $globalDispatcherDefinition = $container->findDefinition('event_dispatcher');
@@ -126,9 +129,9 @@ class RegisterListenersPass implements CompilerPassInterface
 
                 $dispatcherDefinition->addMethodCall('addListener', [$event['event'], [new ServiceClosureArgument(new Reference($id)), $event['method']], $priority]);
 
-                if (isset($this->hotPathEvents[$event['event']])) {
+                if (isset($hotPathEvents[$event['event']])) {
                     $container->getDefinition($id)->addTag('container.hot_path');
-                } elseif (isset($this->noPreloadEvents[$event['event']])) {
+                } elseif (isset($noPreloadEvents[$event['event']])) {
                     ++$noPreload;
                 }
             }
@@ -177,9 +180,9 @@ class RegisterListenersPass implements CompilerPassInterface
                     $dispatcherDefinition->addMethodCall('addListener', $args);
                 }
 
-                if (isset($this->hotPathEvents[$args[0]])) {
+                if (isset($hotPathEvents[$args[0]])) {
                     $container->getDefinition($id)->addTag('container.hot_path');
-                } elseif (isset($this->noPreloadEvents[$args[0]])) {
+                } elseif (isset($noPreloadEvents[$args[0]])) {
                     ++$noPreload;
                 }
             }

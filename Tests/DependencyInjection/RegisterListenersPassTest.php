@@ -225,6 +225,25 @@ class RegisterListenersPassTest extends TestCase
         $this->assertFalse($container->getDefinition('baz')->hasTag('container.no_preload'));
     }
 
+    public function testRegisterListenersPassIsIdempotentAcrossContainers()
+    {
+        $first = new ContainerBuilder();
+        $first->register('foo', SubscriberService::class)->addTag('kernel.event_subscriber', []);
+        $first->register('event_dispatcher', 'stdClass');
+        $first->setParameter('event_dispatcher.hot_path_events', ['event']);
+
+        $second = new ContainerBuilder();
+        $second->register('foo', SubscriberService::class)->addTag('kernel.event_subscriber', []);
+        $second->register('event_dispatcher', 'stdClass');
+
+        $pass = new RegisterListenersPass();
+        $pass->process($first);
+        $pass->process($second);
+
+        $this->assertTrue($first->getDefinition('foo')->hasTag('container.hot_path'));
+        $this->assertFalse($second->getDefinition('foo')->hasTag('container.hot_path'));
+    }
+
     public function testMultipleAddEventAliasesPassMerge()
     {
         $container = new ContainerBuilder();

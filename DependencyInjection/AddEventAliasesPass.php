@@ -43,12 +43,12 @@ class AddEventAliasesPass implements CompilerPassInterface
 
         if ($this->hotPathEvents) {
             $events = $container->hasParameter('event_dispatcher.hot_path_events') ? $container->getParameter('event_dispatcher.hot_path_events') : [];
-            $container->setParameter('event_dispatcher.hot_path_events', array_merge($events, $this->hotPathEvents));
+            $container->setParameter('event_dispatcher.hot_path_events', array_values(array_unique(array_merge($events, $this->hotPathEvents))));
         }
 
         if ($this->noPreloadEvents) {
             $events = $container->hasParameter('event_dispatcher.no_preload_events') ? $container->getParameter('event_dispatcher.no_preload_events') : [];
-            $container->setParameter('event_dispatcher.no_preload_events', array_merge($events, $this->noPreloadEvents));
+            $container->setParameter('event_dispatcher.no_preload_events', array_values(array_unique(array_merge($events, $this->noPreloadEvents))));
         }
     }
 }
