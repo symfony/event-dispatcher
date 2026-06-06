@@ -70,16 +70,16 @@ class EventDispatcherTest extends TestCase
         $this->dispatcher->addListener('pre.foo', [$listener1, 'preFoo'], -10);
         $this->dispatcher->addListener('pre.foo', [$listener2, 'preFoo'], 10);
         $this->dispatcher->addListener('pre.foo', [$listener3, 'preFoo']);
-        $this->dispatcher->addListener('pre.foo', $listener4->preFoo(...), 20);
+        $this->dispatcher->addListener('pre.foo', $listener4Listener = $listener4->preFoo(...), 20);
 
         $expected = [
-            $listener4->preFoo(...),
+            $listener4Listener,
             [$listener2, 'preFoo'],
             [$listener3, 'preFoo'],
             [$listener1, 'preFoo'],
         ];
 
-        $this->assertEquals($expected, $this->dispatcher->getListeners('pre.foo'));
+        $this->assertSame($expected, $this->dispatcher->getListeners('pre.foo'));
     }
 
     public function testGetAllListenersSortsByPriority()
