@@ -13,6 +13,7 @@ namespace Symfony\Component\EventDispatcher\Tests\DependencyInjection;
 
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
+use PHPUnit\Framework\Attributes\RequiresMethod;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -604,6 +605,7 @@ class RegisterListenersPassTest extends TestCase
         $this->assertEquals($expectedCalls, $definition->getMethodCalls());
     }
 
+    #[RequiresMethod(ServicesBundle::class, 'build')]
     public function testDecoratingAListenerRegistersTheDecoratorAsListener()
     {
         $container = new ContainerBuilder();
@@ -630,6 +632,7 @@ class RegisterListenersPassTest extends TestCase
         $this->assertSame(['decorator'], $listeners);
     }
 
+    #[RequiresMethod(ServicesBundle::class, 'build')]
     public function testDecoratorThatIsAlsoAnEventSubscriberStaysRegistered()
     {
         $container = new ContainerBuilder();
