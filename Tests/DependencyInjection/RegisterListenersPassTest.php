@@ -20,10 +20,12 @@ use Symfony\Component\DependencyInjection\Compiler\AttributeAutoconfigurationPas
 use Symfony\Component\DependencyInjection\Compiler\ResolveInstanceofConditionalsPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Kernel\ServicesBundle;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\DependencyInjection\AddEventAliasesPass;
 use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\Tests\Fixtures\CustomEvent;
 use Symfony\Component\EventDispatcher\Tests\Fixtures\DummyEvent;
@@ -602,6 +604,59 @@ class RegisterListenersPassTest extends TestCase
         $this->assertEquals($expectedCalls, $definition->getMethodCalls());
     }
 
+    public function testDecoratingAListenerRegistersTheDecoratorAsListener()
+    {
+        $container = new ContainerBuilder();
+        new ServicesBundle()->build($container);
+
+        $container->register('event_dispatcher', EventDispatcher::class)->setPublic(true);
+        $container->register('listener', TaggedInvokableListener::class)
+            ->setPublic(true)
+            ->addTag('kernel.event_listener', ['event' => CustomEvent::class]);
+        $container->register('decorator', DecoratingListener::class)
+            ->setPublic(true)
+            ->setArguments([new Reference('decorator.inner')])
+            ->setDecoratedService('listener');
+
+        $container->compile();
+
+        $listeners = [];
+        foreach ($container->getDefinition('event_dispatcher')->getMethodCalls() as [$method, $arguments]) {
+            if ('addListener' === $method) {
+                $listeners[] = (string) $arguments[1][0]->getValues()[0];
+            }
+        }
+
+        $this->assertSame(['decorator'], $listeners);
+    }
+
+    public function testDecoratorThatIsAlsoAnEventSubscriberStaysRegistered()
+    {
+        $container = new ContainerBuilder();
+        new ServicesBundle()->build($container);
+        $container->registerForAutoconfiguration(EventSubscriberInterface::class)
+            ->addTag('kernel.event_subscriber');
+
+        $container->register('event_dispatcher', EventDispatcher::class)->setPublic(true);
+        $container->register('decorated', \stdClass::class);
+        $container->register('decorator', SubscribingDecorator::class)
+            ->setAutoconfigured(true)
+            ->setPublic(true)
+            ->setArguments([new Reference('decorator.inner')])
+            ->setDecoratedService('decorated');
+
+        $container->compile();
+
+        $listeners = [];
+        foreach ($container->getDefinition('event_dispatcher')->getMethodCalls() as [$method, $arguments]) {
+            if ('addListener' === $method) {
+                $listeners[] = (string) $arguments[1][0]->getValues()[0];
+            }
+        }
+
+        $this->assertSame(['decorator'], $listeners);
+    }
+
     private function createContainerBuilder(): ContainerBuilder
     {
         $container = new ContainerBuilder();
@@ -634,6 +689,33 @@ class InvokableListenerService
     }
 
     public function onEvent()
+    {
+    }
+}
+
+final class DecoratingListener
+{
+    public function __construct(private TaggedInvokableListener $inner)
+    {
+    }
+
+    public function __invoke(CustomEvent $event): void
+    {
+    }
+}
+
+final class SubscribingDecorator implements EventSubscriberInterface
+{
+    public function __construct(private object $inner)
+    {
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return ['some_event' => 'onSomeEvent'];
+    }
+
+    public function onSomeEvent(): void
     {
     }
 }
